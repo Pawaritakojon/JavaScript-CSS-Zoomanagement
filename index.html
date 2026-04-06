@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ระบบบริหารจัดการสวนสัตว์</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell app-shell--logged-out" id="appShell">
+    <aside class="sidebar">
+      <h1 class="logo">ZOO MANAGER</h1>
+      <nav>
+        <button class="nav-item" data-section="login">เข้าสู่ระบบ</button>
+        <button class="nav-item" data-section="dashboard">แดชบอร์ด</button>
+        <button class="nav-item" data-section="animal-hub">ข้อมูลสัตว์และพื้นฐาน</button>
+        <button class="nav-item" data-section="health">สุขภาพสัตว์</button>
+        <button class="nav-item" data-section="food">อาหารสัตว์</button>
+        <button class="nav-item" data-section="reports">รายงาน</button>
+        <button class="nav-item" data-section="users">ผู้ใช้งาน</button>
+      </nav>
+      <div class="current-user" id="currentUserInfo">
+        ยังไม่ได้เข้าสู่ระบบ
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-right">
+          <span id="topUserName" class="topbar-user"></span>
+          <button id="logoutBtn" class="topbar-logout">ออกจากระบบ</button>
+        </div>
+      </header>
+      <!-- SECTION: LOGIN -->
+      <section id="section-login" class="section active">
+        <h2>เข้าสู่ระบบ</h2>
+        <form id="loginForm" class="card-form">
+          <label>
+            อีเมล
+            <input type="email" id="loginEmail" required>
+          </label>
+          <label>
+            รหัสผ่าน
+            <input type="password" id="loginPassword" required>
+          </label>
+          <button type="submit">เข้าสู่ระบบ</button>
+        </form>
+        <p class="hint">
+          * ให้สร้างผู้ใช้เริ่มต้นผ่าน Firebase Console หรือหน้า "ผู้ใช้งาน" หลังจากล็อกอินแล้ว
+        </p>
+      </section>
+
+      <!-- SECTION: DASHBOARD -->
+      <section id="section-dashboard" class="section section-dashboard">
+        <div class="dashboard-hero">
+          <div>
+            <p class="dashboard-kicker">ภาพรวมการดำเนินงาน</p>
+            <h2 class="dashboard-title">แดชบอร์ดสวนสัตว์</h2>
+            <p class="dashboard-sub" id="dashboardGreeting">ยินดีต้อนรับ — สรุปสถานะหลักของระบบ</p>
+          </div>
+        </div>
+
+        <div class="dashboard-bento">
+          <div class="stat-card stat-card--wide">
+            <div class="stat-icon" aria-hidden="true">◎</div>
+            <div class="stat-label">จำนวนสัตว์ทั้งหมด</div>
+            <div class="stat-value" id="statTotalAnimals">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--cyan" aria-hidden="true">◇</div>
+            <div class="stat-label">ประเภทสัตว์</div>
+            <div class="stat-value" id="statAnimalTypes">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--amber" aria-hidden="true">▣</div>
+            <div class="stat-label">คำร้องจัดซื้อรอดำเนินการ</div>
+            <div class="stat-value" id="statPendingPurchases">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--rose" aria-hidden="true">♥</div>
+            <div class="stat-label">บันทึกสุขภาพ (ทั้งหมด)</div>
+            <div class="stat-value" id="statHealthRecords">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--violet" aria-hidden="true">◆</div>
+            <div class="stat-label">ผู้ใช้งานทั้งหมด</div>
+            <div class="stat-value" id="statTotalUsers">-</div>
+          </div>
+        </div>
+
+        <div class="dashboard-users-by-role card-table">
+          <h3 class="dashboard-subsection-title">ผู้ใช้งานแยกตามตำแหน่ง</h3>
+          <p class="hint dashboard-subsection-hint">
+            <span id="dashboardUsersTotalHint">กำลังโหลด...</span>
+            — นับจากรายการในเมนูผู้ใช้งาน
+          </p>
+          <div id="dashboardUserRoleGrid" class="dashboard-type-grid">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
+        <div class="dashboard-by-type card-table">
+          <h3 class="dashboard-subsection-title">จำนวนสัตว์แยกตามประเภท</h3>
+          <p class="hint dashboard-subsection-hint">
+            นับตาม<strong>ประเภทสัตว์</strong>ที่ลงทะเบียน (ไม่ใช่ชื่อรายตัว) — สัตว์หลายตัวที่เป็นประเภทเดียวกัน เช่น ฟลามิงโก้ 001 กับ ฟลามิงโก้ 002 จะ<strong>รวมนับเป็นจำนวนตัวในประเภทฟลามิงโก้</strong>
+          </p>
+          <div id="dashboardByTypeGrid" class="dashboard-type-grid">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
+        <div class="dashboard-health-annual card-table">
+          <h3 class="dashboard-subsection-title">ผลตรวจสุขภาพประจำปี (ตามชนิด)</h3>
+          <p class="hint dashboard-subsection-hint">
+            เลือกปี (ค.ศ.) เพื่อดูว่าแต่ละชนิด (ประเภท · คำนาม) ตรวจแล้วได้ผลอย่างไร — แสดงจากบันทึกในหน้าสุขภาพสัตว์ โหมดตรวจประจำปี
+          </p>
+          <label class="dashboard-health-year-label">
+            ปีที่ตรวจ (ค.ศ.)
+            <select id="dashboardHealthYearSelect" aria-label="เลือกปีที่ตรวจ"></select>
+          </label>
+          <div id="dashboardAnnualHealthList" class="dashboard-annual-health-list">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
+        <div class="dashboard-tasks card-table">
+          <div class="dashboard-tasks-head">
+            <h3>ตารางการทำงานวันนี้</h3>
+            <span class="hint" id="todayTasksHint"></span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>เวลา</th>
+                <th>งาน</th>
+                <th>ประเภทสัตว์</th>
+              </tr>
+            </thead>
+            <tbody id="todayTasksBody">
+              <!-- filled by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION: ANIMAL HUB (พื้นฐาน + ลงทะเบียนสัตว์) -->
+      <section id="section-animal-hub" class="section section-animal-hub">
+        <header class="hub-page-head">
+          <div>
+            <h2 class="hub-page-title">ข้อมูลสัตว์และข้อมูลพื้นฐาน</h2>
+            <p class="hub-page-sub">จัดการข้อมูลอ้างอิงและลงทะเบียนสัตว์ได้ในหน้าเดียว</p>
+          </div>
+        </header>
+
+        <div class="hub-main-tabs hub-main-tabs--underline">
+          <button type="button" class="hub-tab active" data-hub="reference">ข้อมูลอ้างอิง</button>
+          <button type="button" class="hub-tab" data-hub="registry">ลงทะเบียนสัตว์</button>
+        </div>
+
+        <div id="hub-reference" class="hub-panel active">
+          <div class="hub-ref-grid">
+            <form id="masterForm" class="card-form card-form--master">
+              <h3 id="masterFormTitle">เพิ่มข้อมูลอ้างอิง</h3>
+              <input type="hidden" id="masterEntity" value="animalTypes">
+              <input type="hidden" id="masterId">
+
+              <div class="master-entity-pills" role="tablist" aria-label="ประเภทข้อมูลอ้างอิง">
+                <button type="button" class="master-pill active" data-master="animalTypes">ประเภทสัตว์</button>
+                <button type="button" class="master-pill" data-master="nouns">คำนาม</button>
+                <button type="button" class="master-pill" data-master="enclosures">กรง / โซน</button>
+                <button type="button" class="master-pill" data-master="feedItems">อาหาร</button>
+                <button type="button" class="master-pill" data-master="departments">หน่วยงาน</button>
+              </div>
+
+              <label id="masterNounTypeWrap" class="master-noun-type-wrap hidden" for="masterNounTypeSelect">
+                ประเภทสัตว์ที่เชื่อมกับคำนามนี้
+                <select id="masterNounTypeSelect"></select>
+              </label>
+
+              <label class="master-field-label-main" for="masterName">
+                <span id="masterNameLabelSpan">ชื่อรายการ</span>
+              </label>
+              <div class="master-inline-row">
+                <input type="text" id="masterName" class="master-name-input" placeholder="ชื่อรายการ..." required>
+                <button type="submit" class="btn-master-add" id="masterSubmitBtn">+ เพิ่ม</button>
+              </div>
+              <label class="label-optional">
+                <span id="masterDescriptionLabelSpan">รายละเอียดเพิ่มเติม (ไม่บังคับ)</span>
+                <textarea id="masterDescription" rows="3" placeholder="เช่น อาหารหลัก ถิ่นอาศัย..."></textarea>
+              </label>
+              <button type="button" class="btn-text-reset" id="masterReset">ล้างฟอร์ม</button>
+            </form>
+
+            <div class="card-table card-table--list">
+              <h3 class="list-panel-title" id="masterListTitle">รายการ</h3>
+              <div id="masterCardList" class="master-card-list">
+                <!-- filled by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="hub-registry" class="hub-panel">
+          <div class="hub-ref-grid hub-registry-grid">
+            <form id="animalForm" class="card-form card-form--wizard">
+              <input type="hidden" id="animalId">
+
+              <nav class="wizard-stepper" aria-label="ขั้นตอนลงทะเบียน">
+                <div class="wizard-stepper-track">
+                  <span class="wizard-dot active" data-step-dot="1">1</span>
+                  <span class="wizard-connector"></span>
+                  <span class="wizard-dot" data-step-dot="2">2</span>
+                  <span class="wizard-connector"></span>
+                  <span class="wizard-dot" data-step-dot="3">3</span>
+                  <span class="wizard-connector"></span>
+                  <span class="wizard-dot" data-step-dot="4">4</span>
+                </div>
+                <div class="wizard-stepper-labels">
+                  <span>ประเภท</span>
+                  <span>รายละเอียด</span>
+                  <span>ที่พัก &amp; ผู้ดูแล</span>
+                  <span>ยืนยัน</span>
+                </div>
+              </nav>
+
+              <div class="wizard-step active" data-wizard-step="1">
+                <p class="wizard-hint">เลือกประเภทสัตว์ก่อน ระบบจะตั้งชื่อเบื้องต้นให้อัตโนมัติ</p>
+                <label>
+                  ประเภทสัตว์
+                  <select id="animalTypeSelect" required></select>
+                </label>
+                <div id="animalTypeBadge" class="type-badge" hidden></div>
+              </div>
+
+              <div class="wizard-step" data-wizard-step="2">
+                <label>
+                  ชื่อที่แสดง / เรียก (แก้ได้ เช่น Lion-001 / Simba)
+                  <input type="text" id="animalName" placeholder="จะเติมจากประเภทถ้าเว้นว่าง">
+                </label>
+                <p class="field-hint">ถ้าเว้นว่าง ระบบจะใช้ชื่อจากประเภทสัตว์</p>
+                <div class="row-two">
+                  <label>
+                    เพศ
+                    <select id="animalGender">
+                      <option value="">— เลือก —</option>
+                      <option value="ผู้">ผู้</option>
+                      <option value="เมีย">เมีย</option>
+                      <option value="ไม่ระบุ">ไม่ระบุ</option>
+                    </select>
+                  </label>
+                  <label>
+                    วันเกิด
+                    <input type="date" id="animalBirthdate">
+                  </label>
+                </div>
+              </div>
+
+              <div class="wizard-step" data-wizard-step="3">
+                <label>
+                  กรง / โซน
+                  <select id="animalEnclosureSelect" required></select>
+                </label>
+                <label>
+                  ผู้ดูแลประจำ
+                  <select id="animalCaretakerSelect"></select>
+                </label>
+                <label>
+                  หมายเหตุ
+                  <textarea id="animalNote" rows="3"></textarea>
+                </label>
+              </div>
+
+              <div class="wizard-step" data-wizard-step="4">
+                <h4 class="confirm-heading">สรุปก่อนบันทึก</h4>
+                <div id="animalSummary" class="animal-summary"></div>
+              </div>
+
+              <div class="wizard-nav">
+                <button type="button" class="btn-wizard-back" id="animalStepPrev">ย้อนกลับ</button>
+                <button type="button" class="btn-wizard-next" id="animalStepNext">ถัดไป →</button>
+                <button type="submit" class="btn-wizard-submit hidden" id="animalSubmitBtn">บันทึกข้อมูลสัตว์</button>
+              </div>
+              <button type="button" class="btn-text-reset" id="animalReset">ล้างฟอร์ม</button>
+            </form>
+
+            <div class="card-table card-table--list">
+              <input type="search" id="animalSearch" class="animal-search" placeholder="ค้นหา ชื่อ / ประเภท / กรง...">
+              <div id="animalCardList" class="animal-card-list">
+                <!-- filled by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: HEALTH -->
+      <section id="section-health" class="section section-health">
+        <h2>สุขภาพสัตว์ — ตรวจประจำปีและการดูแล</h2>
+        <p class="hint">บันทึกตรวจสุขภาพประจำปีแยกจากกรณีป่วยหรือดูแลพิเศษ เพื่อสะดวกต่อการติดตาม</p>
+        <div class="tabs health-mode-tabs">
+          <button type="button" class="tab-button active" data-health-mode="annual">ตรวจสุขภาพประจำปี</button>
+          <button type="button" class="tab-button" data-health-mode="illness">กรณีป่วย / ดูแลพิเศษ</button>
+        </div>
+
+        <div id="health-panel-annual" class="health-panel active two-column">
+          <form id="healthAnnualForm" class="card-form card-form--health">
+            <h3>ฟอร์มตรวจสุขภาพประจำปี</h3>
+            <label>
+              ประเภทสัตว์
+              <select id="healthAnnualTypeSelect" required></select>
+            </label>
+            <label>
+              คำนาม (สายพันธุ์)
+              <select id="healthAnnualNounSelect" required></select>
+            </label>
+            <p class="field-hint">รายการคำนามเดียวกับ ข้อมูลอ้างอิง — เลือกคำนามก่อนได้ (จะเติมประเภทอัตโนมัติถ้ามีการผูกไว้) หรือเลือกประเภทก่อนเพื่อให้รายการตรงกลุ่มเรียงขึ้นบน</p>
+            <label>
+              ปีที่ตรวจ
+              <input type="number" id="healthAnnualYear" min="2000" max="2100" required>
+            </label>
+            <label>
+              วันที่ตรวจจริง
+              <input type="date" id="healthAnnualDate" required>
+            </label>
+            <label>
+              ผลการตรวจรวม
+              <select id="healthAnnualResult" required>
+                <option value="ผ่าน">ผ่าน</option>
+                <option value="ติดตาม">ติดตาม</option>
+                <option value="ไม่ผ่าน">ไม่ผ่าน</option>
+              </select>
+            </label>
+            <label>
+              รายละเอียด / ข้อควรระวัง
+              <textarea id="healthAnnualNote" rows="3" placeholder="เช่น ภาวะโภชนาการ ฟัน เล็บ เอกซเรย์"></textarea>
+            </label>
+            <label>
+              กำหนดตรวจครั้งถัดไป (แนะนำ +1 ปี)
+              <input type="date" id="healthAnnualNext">
+            </label>
+            <button type="submit">บันทึกตรวจประจำปี</button>
+          </form>
+
+          <div class="card-table health-aside">
+            <h3>คำแนะนำการกรอก</h3>
+            <ul class="health-checklist">
+              <li>เลือกประเภทสัตว์และคำนามให้ตรงกับกลุ่มที่ตรวจ และวันที่ตรวจตรงเอกสาร</li>
+              <li>กรอกปีที่ตรวจเพื่อสรุปเป็นรายปี</li>
+              <li>ถ้ายังไม่มีวันนัดถัดไป ให้เลือกช่วงหลังตรวจจริงตามนโยบายหน่วยงาน</li>
+            </ul>
+          </div>
+        </div>
+
+        <div id="health-panel-illness" class="health-panel two-column">
+          <form id="healthIllnessForm" class="card-form card-form--health">
+            <h3>บันทึกกรณีป่วย / ดูแลพิเศษ</h3>
+            <label>
+              ประเภทสัตว์
+              <select id="healthIllnessTypeSelect" required></select>
+            </label>
+            <label>
+              คำนาม (สายพันธุ์)
+              <select id="healthIllnessNounSelect" required></select>
+            </label>
+            <p class="field-hint">รายการคำนามเดียวกับ ข้อมูลอ้างอิง — เลือกคำนามก่อนได้ (จะเติมประเภทอัตโนมัติถ้ามีการผูกไว้) หรือเลือกประเภทก่อนเพื่อให้รายการตรงกลุ่มเรียงขึ้นบน</p>
+            <label>
+              วันที่บันทึก
+              <input type="date" id="healthIllnessDate" required>
+            </label>
+            <label>
+              สถานะสุขภาพ
+              <select id="healthIllnessStatus" required>
+                <option value="ดี">ดี</option>
+                <option value="เฝ้าระวัง">เฝ้าระวัง</option>
+                <option value="ป่วย">ป่วย</option>
+                <option value="ฉุกเฉิน">ฉุกเฉิน</option>
+              </select>
+            </label>
+            <label>
+              อาการ / ผลตรวจ
+              <textarea id="healthIllnessNote" rows="3"></textarea>
+            </label>
+            <label>
+              การรักษา
+              <textarea id="healthIllnessTreatment" rows="3"></textarea>
+            </label>
+            <label>
+              กำหนดนัดตรวจครั้งถัดไป
+              <input type="date" id="healthIllnessNextCheck">
+            </label>
+            <button type="submit">บันทึกกรณีพิเศษ</button>
+          </form>
+
+          <div class="card-table">
+            <h3>ประวัติสุขภาพล่าสุด</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>วันที่</th>
+                  <th>ประเภท / คำนาม</th>
+                  <th>ประเภทบันทึก</th>
+                  <th>สถานะ / ผล</th>
+                  <th>นัดถัดไป</th>
+                </tr>
+              </thead>
+              <tbody id="healthTableBody">
+                <!-- filled by JS -->
+              </tbody>
+            </table>
+            <div class="hint" id="healthAlerts"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: FOOD -->
+      <section id="section-food" class="section">
+        <h2>ระบบบริหารจัดการอาหารสัตว์</h2>
+        <div class="tabs">
+          <button class="tab-button active" data-food="daily">การให้อาหารประจำวัน</button>
+          <button class="tab-button" data-food="inventory">สต็อกอาหาร</button>
+          <button class="tab-button" data-food="purchase">คำร้องขอจัดซื้อ</button>
+        </div>
+
+        <div id="food-daily" class="food-panel active two-column">
+          <form id="feedingForm" class="card-form">
+            <h3>บันทึกการให้อาหาร</h3>
+            <label>
+              สัตว์
+              <select id="feedingAnimalSelect" required></select>
+            </label>
+            <label>
+              คำนาม (สายพันธุ์)
+              <select id="feedingNounSelect">
+                <option value="">— เลือกสัตว์ก่อน —</option>
+              </select>
+            </label>
+            <label>
+              อาหาร
+              <select id="feedingItemSelect" required></select>
+            </label>
+            <label>
+              วันที่
+              <input type="date" id="feedingDate" required>
+            </label>
+            <label>
+              ปริมาณ (กก. หรือหน่วยที่ใช้งาน)
+              <input type="number" step="0.01" id="feedingAmount" required>
+            </label>
+            <button type="submit">บันทึก</button>
+          </form>
+
+          <div class="card-table">
+            <h3>ประวัติการให้อาหารวันนี้</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>เวลา</th>
+                  <th>สัตว์</th>
+                  <th>อาหาร</th>
+                  <th>ปริมาณ</th>
+                </tr>
+              </thead>
+              <tbody id="feedingTableBody">
+                <!-- filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="food-inventory" class="food-panel two-column">
+          <form id="inventoryForm" class="card-form">
+            <h3>ปรับปรุงสต็อกอาหาร</h3>
+            <label>
+              รายการอาหาร
+              <select id="inventoryItemSelect" required></select>
+            </label>
+            <label>
+              ปริมาณคงเหลือ (รวมหลังปรับปรุง)
+              <input type="number" step="0.01" id="inventoryQuantity" required>
+            </label>
+            <button type="submit">อัปเดตสต็อก</button>
+          </form>
+
+          <div class="card-table">
+            <h3>ภาพรวมสต็อกอาหาร</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>อาหาร</th>
+                  <th>ปริมาณคงเหลือ</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody">
+                <!-- filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="food-purchase" class="food-panel two-column">
+          <form id="purchaseForm" class="card-form">
+            <h3>คำร้องขอจัดซื้ออาหาร</h3>
+            <label>
+              รายการอาหาร
+              <select id="purchaseItemSelect" required></select>
+            </label>
+            <label>
+              ปริมาณที่ต้องการ
+              <input type="number" step="0.01" id="purchaseQuantity" required>
+            </label>
+            <label>
+              เหตุผล / หมายเหตุ
+              <textarea id="purchaseNote" rows="3"></textarea>
+            </label>
+            <button type="submit">สร้างคำร้อง</button>
+          </form>
+
+          <div class="card-table">
+            <h3>รายการคำร้องขอจัดซื้อ</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>อาหาร</th>
+                  <th>ปริมาณ</th>
+                  <th>สถานะ</th>
+                  <th>การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="purchaseTableBody">
+                <!-- filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: REPORTS -->
+      <section id="section-reports" class="section">
+        <h2>ระบบรายงานและสรุปผล</h2>
+        <div class="cards-grid">
+          <div class="report-card">
+            <h3>จำนวนสัตว์แยกตามประเภท</h3>
+            <ul id="reportAnimalsByType"></ul>
+          </div>
+          <div class="report-card">
+            <h3>สถานะสุขภาพสัตว์</h3>
+            <ul id="reportHealthStatus"></ul>
+          </div>
+          <div class="report-card">
+            <h3>การใช้อาหาร (30 วันล่าสุด)</h3>
+            <ul id="reportFoodUsage"></ul>
+          </div>
+          <div class="report-card">
+            <h3>สรุปผลการดำเนินงาน</h3>
+            <ul id="reportSummary"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: USERS & ROLES -->
+      <section id="section-users" class="section">
+        <h2>ระบบจัดการสิทธิ์และผู้ใช้งาน</h2>
+        <div class="two-column users-layout">
+          <form id="userForm" class="card-form users-form-admin">
+            <h3>เพิ่ม / แก้ไขผู้ใช้งาน</h3>
+            <input type="hidden" id="userId">
+            <label>
+              อีเมล (ตรงกับ Firebase Auth)
+              <input type="email" id="userEmail" required>
+            </label>
+            <label>
+              ชื่อที่แสดง
+              <input type="text" id="userDisplayName" required>
+            </label>
+            <label>
+              บทบาท
+              <select id="userRole" required>
+                <option value="pending">รอกำหนดตำแหน่ง (พนักงานใหม่)</option>
+                <option value="admin">ผู้บริหาร / แอดมิน</option>
+                <option value="vet">สัตวแพทย์</option>
+                <option value="keeper">เจ้าหน้าที่ดูแลสัตว์</option>
+                <option value="food">คลังอาหาร</option>
+              </select>
+            </label>
+            <label>
+              หน่วยงาน
+              <select id="userDepartmentSelect"></select>
+            </label>
+            <button type="submit">บันทึกผู้ใช้งาน</button>
+          </form>
+
+          <div class="card-table">
+            <h3>รายชื่อผู้ใช้ระบบ</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>อีเมล</th>
+                  <th>ชื่อ</th>
+                  <th>หน่วยงาน</th>
+                  <th>บทบาท</th>
+                  <th>การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+                <!-- filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
+

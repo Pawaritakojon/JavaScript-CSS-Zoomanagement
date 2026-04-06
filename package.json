@@ -1,0 +1,17 @@
+{
+  "name": "zoo-management-firebase",
+  "version": "1.0.0",
+  "description": "เว็บแอประบบบริหารจัดการสวนสัตว์ (Firebase Firestore + Auth, HTML/JS ธรรมดา)",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "firebase",
+    "zoo",
+    "management",
+    "vanilla-js"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+
